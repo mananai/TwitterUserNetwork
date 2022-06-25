@@ -113,38 +113,6 @@ public class UserDAO {
 	}
 
 
-
-	@Deprecated
-	static List<Long> getExistingFriendIds() throws SQLException{
-		List<Long> list = new ArrayList<>();
-		ResultSet rs = DBResources.getInstance().executeQuery("select id from friend");
-		while(rs.next()) {
-			list.add(rs.getLong(1));
-		}
-		return list;
-	}
-
-	@Deprecated
-	static Collection<Long> getPendingUserIds(){
-		return getUserIds(ProcessStatus.Pending.value);
-	}
-	
-	
-	@Deprecated
-	static Collection<Long> getUserIds(int status){
-		try {
-			List<Long> collection = new ArrayList<>();
-			ResultSet rs = DBResources.getInstance().executeQuery("select id from user where status=?", status);
-			while(rs.next()) {
-				collection.add(rs.getLong(1));
-			}
-			return collection;
-		} catch (SQLException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
-	}
-
 	static long countUsers() throws SQLException{
 		ResultSet rs = DBResources.getInstance().executeQuery("select count(*) from user");
 		if (rs.next()) {
@@ -199,8 +167,6 @@ public class UserDAO {
 		
 	}
 	
-
-
 	static List<Long> getUserIds(String sql) throws SQLException{
 		ResultSet resultSet = DBResources.getInstance().executeQuery(sql);
 		List<Long> ids = new ArrayList<>();
@@ -211,63 +177,6 @@ public class UserDAO {
 	}
 
 	
-	
-	@Deprecated
-	static List<User> insertFriends(long userId, List<User> friends) throws SQLException {
-		
-		Connection connection = DBResources.getInstance().getConnection();
-		
-		List<Long> existingFriendIds = getExistingFriendIds();
-		
-		connection.setAutoCommit(false);
-		PreparedStatement pstmt = DBResources.getInstance().prepareStatement(
-					"insert into friend(id, name, screenname, description, email, " +
-					"favorites_count, followers_count, friends_count, lang, location, imageurl, "+
-					"created, last_modified) " +
-					"values( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) ");
-		
-		PreparedStatement pstmt2 = DBResources.getInstance().prepareStatement(
-					"insert or ignore into friend_friend(user_id, friend_id) "+ 
-					"values(?, ?)");
-		
-		List<User> newUsers = new ArrayList<>();
-		for (User friend: friends) {
-			
-			if ( existingFriendIds.contains(friend.getId()))
-				continue;
-			
-			DBResources.getInstance().setStatementParameters(pstmt, 
-					friend.getId(),
-					friend.getName(), 
-					friend.getScreenName(),
-					friend.getDescription(),
-					friend.getEmail(), 
-					friend.getFavouritesCount(),
-					friend.getFollowersCount(), 
-					friend.getFriendsCount(),
-					friend.getLang(),
-					friend.getLocation(),
-					friend.get400x400ProfileImageURL(),
-					TweetConsts.dfISO8601.format(friend.getCreatedAt()),
-					TweetConsts.dfISO8601.format(new Date()));
-			pstmt.addBatch();
-			
-
-			if (userId == friend.getId())
-				continue;
-			
-			newUsers.add(friend);
-
-			DBResources.getInstance().setStatementParameters(pstmt2, userId, friend.getId());
-			pstmt2.addBatch();
-		}
-		pstmt.executeBatch();
-		pstmt2.executeBatch();
-		connection.commit();
-		connection.setAutoCommit(true);
-		return newUsers;
-	}
-
 	
 	static List<Long> getUserIdsToBeProcessed() throws SQLException{
 		List<Long> list = new ArrayList<>();
