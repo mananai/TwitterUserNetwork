@@ -85,6 +85,11 @@ public class UserDAO {
 		
 		for (User user: users) {
 			
+			String createdAt = null;
+			try {
+				createdAt = user.getCreatedAt()!=null ? TweetConsts.dfISO8601.format(user.getCreatedAt()) : null;
+			} catch (Exception e) {
+			}
 			DBResources.getInstance().setStatementParameters(pstmt, 
 					user.getId(),
 					user.getName(), 
@@ -101,7 +106,7 @@ public class UserDAO {
 					null, //user.get400x400ProfileImageURL(),
 					user.isProtected() ?  1: 0,
 					user.isVerified() ? 1 : 0,
-					TweetConsts.dfISO8601.format(user.getCreatedAt()),
+					createdAt,
 					TweetConsts.dfISO8601.format(new Date()));
 			pstmt.addBatch();
 		}
